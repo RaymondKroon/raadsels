@@ -7,7 +7,7 @@
           (def p ( Path. buckets [])))
 
 (defprotocol Pour
-  (make-moves [this])
+  (make-moves [this not-wanted-results])
   (get-volumes [this]))
 
 (defrecord Bucket [capacity volume])
@@ -20,23 +20,25 @@
 
 (defrecord Path [buckets moves]
   Pour
-  (make-moves [this]
-    (for [move (possible-moves buckets)]
-     (Path.  (pour buckets move) (conj moves move))))
+  (make-moves [this not-wanted-results]
+    (for [move (possible-moves buckets)
+          :let [new-state (pour buckets move)]
+           :when (not (contains? not-wanted-results new-state))]
+        (Path.  new-state (conj moves move))))
   (get-volumes [this]
     (frequencies (map :volume (vals buckets)))))
 
 (extend-type clojure.lang.PersistentVector
   Pour
-  (make-moves [this]
-    (mapcat make-moves this))
+  (make-moves [this not-wanted-results]
+    (mapcat #(make-moves % not-wanted-results) this))
   (get-volumes [this]
     (map get-volumes this)))
 
 (extend-type clojure.lang.LazySeq
   Pour
-  (make-moves [this]
-    (mapcat make-moves this))
+  (make-moves [this not-wanted-results]
+    (mapcat #(make-moves % not-wanted-results) this))
   (get-volumes [this]
     (map get-volumes this)))
 
@@ -68,7 +70,7 @@
    (println (count paths))
    (if (contains? (set (map get-volumes paths)) target)
      (give-solution paths target)
-     (let [newpaths (make-moves paths)
+     (let [newpaths (make-moves paths explored)
            newstates (map :buckets newpaths)
            newexplored (conj explored newstates)]
      (recur newpaths target newexplored))
