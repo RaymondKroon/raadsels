@@ -1,6 +1,7 @@
 (ns raadsels.bucket
   (:refer-clojure)
-  (:require [ clojure.string :as str]))
+  (:require [ clojure.string :as str])
+  (:require [criterium.core :refer :all]))
 
 (comment  (def buckets {:a (Bucket. 12 12) :b (Bucket. 8 0) :c (Bucket. 5 0)})
           (def target [6 6 0])
@@ -23,7 +24,7 @@
   (make-moves [this not-wanted-results]
     (for [move (possible-moves buckets)
           :let [new-state (pour buckets move)]
-           :when (not (contains? not-wanted-results new-state))]
+          :when (not (contains? not-wanted-results new-state))]
         (Path.  new-state (conj moves move))))
   (get-volumes [this]
     (frequencies (map :volume (vals buckets)))))
@@ -67,7 +68,7 @@
    (solve [(Path. startbuckets [])] (frequencies target) #{startbuckets}))
 
   ([paths target explored]
-   (println (count paths))
+   ;;(println (count paths))
    (if (contains? (set (map get-volumes paths)) target)
      (give-solution paths target)
      (let [newpaths (make-moves paths explored)
@@ -76,3 +77,6 @@
      (recur newpaths target newexplored))
      ))
   )
+
+;;(solve {:a (Bucket. 12 12) :b (Bucket. 8 0) :c (Bucket. 5 0)} [6 6 0])
+(with-progress-reporting (bench (solve {:a (Bucket. 12 12) :b (Bucket. 8 0) :c (Bucket. 5 0)} [6 6 0]) :verbose))
